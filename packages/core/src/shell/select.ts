@@ -122,7 +122,7 @@ function select(file: string | undefined, options?: Options, opts?: { compatible
   return fallback(bin)
 }
 
-const bashForGit = new Map<string, string>()
+const bashForGit = new Map<string, string | false>()
 
 // Git for Windows keeps bash at <root>/bin/bash.exe, but `git` may be
 // <root>/cmd/git.exe or <root>/mingw64/bin/git.exe. MSYS2 keeps it at <root>/usr/bin/bash.exe.
@@ -159,14 +159,14 @@ export function gitbash(options?: Options, bin?: string) {
   const git = findExecutable("git", bin)
   if (!git) return
   const cached = bashForGit.get(git)
+  if (cached === false) return
   if (cached && stat(cached)?.size) return cached
   let file = bashNear(git)
   if (!file) {
     const exec = gitExecPath(git)
     if (exec) file = bashNear(exec)
   }
-  if (!file) return
-  bashForGit.set(git, file)
+  bashForGit.set(git, file || false)
   return file
 }
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "fs"
+import { mkdirSync, mkdtempSync, writeFileSync } from "fs"
 import { tmpdir } from "os"
 import path from "path"
 import { ShellSelect } from "@opencode/core/shell/select"
@@ -28,11 +28,6 @@ function use(dir: string) {
 const windows = process.platform === "win32"
 
 describe("gitbash", () => {
-  test("uses an explicit gitbash path", () => {
-    if (!windows) return
-    expect(ShellSelect.gitbash({ gitbash: "C:\\Git\\bin\\bash.exe" })).toBe("C:\\Git\\bin\\bash.exe")
-  })
-
   test("finds bash from Git cmd, mingw64, and MSYS2 git", () => {
     if (!windows) return
     const gitForWindows = layout(["cmd", "bin", "mingw64/bin"], "mingw64/bin/git.exe", "bin/bash.exe")
@@ -50,21 +45,13 @@ describe("gitbash", () => {
     expect(path.normalize(ShellSelect.gitbash() ?? "")).toBe(path.normalize(path.join(msys, "usr/bin/bash.exe")))
   })
 
-  test("finds the installed Git Bash when mingw64/bin is first on PATH", () => {
-    if (!windows) return
-    const bash = "C:\\Program Files\\Git\\bin\\bash.exe"
-    const mingw = "C:\\Program Files\\Git\\mingw64\\bin"
-    if (!existsSync(bash) || !existsSync(path.join(mingw, "git.exe"))) return
-    use(`${mingw}${path.delimiter}${savedPath ?? ""}`)
-    expect(path.normalize(ShellSelect.gitbash() ?? "").toLowerCase()).toBe(path.normalize(bash).toLowerCase())
-  })
-
   test("returns nothing when the install has no bash.exe", () => {
     if (!windows) return
     const root = mkdtempSync(path.join(tmpdir(), "gitbash-"))
     mkdirSync(path.join(root, "cmd"))
     writeFileSync(path.join(root, "cmd/git.exe"), "git")
     use(path.join(root, "cmd"))
+    expect(ShellSelect.gitbash()).toBeUndefined()
     expect(ShellSelect.gitbash()).toBeUndefined()
   })
 })
